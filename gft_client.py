@@ -86,7 +86,6 @@ while 1:
     inst = parse_inst (raw_inst)
     print (inst)
     (inst, arg) = (inst[0].upper (), inst[1])
-    checksum = ''
     if inst == 'SIZE':
         filesize = int (arg)
         #print ("Filesize: %d" % filesize)
@@ -109,15 +108,13 @@ while 1:
                 got += len (buff)
                 ff.write (buff)
                 to_get -= getting
-        print (got)
+        #print (got)
         calculated = md5 (open (filename,'rb').read ()).hexdigest ()
-        print ("Hash: ", checksum)
-        print ("Calc: ", calculated)
+        print ("Hash:", checksum)
+        print ("Calc:", calculated)
+        if checksum != calculated:
+            print ("Checksum MISMATCH!!")
+        else:
+            print ("Match!")
     elif inst == 'END':
         break
-
-
-    
-
-
-
