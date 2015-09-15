@@ -51,7 +51,7 @@ def read_instruct (sock):
 
 def parse_inst (inst):
     inst = str (inst, "ASCII")
-    pp = r'{([a-zA-Z0-9]+)(?:=([a-zA-Z0-9\./_]+))?}'
+    pp = r'{([a-zA-Z0-9]+)(?:=(.*?))?}'
     inst_patt = re.compile (pp)
     return inst_patt.findall (inst)[0]
 
@@ -80,6 +80,7 @@ filename = ''
 while 1:
     raw_inst = read_instruct (sock)
     #print (raw_inst)
+    sys.stdout.flush ()
     inst = parse_inst (raw_inst)
     print (inst)
     (inst, arg) = (inst[0].upper (), inst[1])
