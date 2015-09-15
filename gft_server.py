@@ -58,11 +58,12 @@ class GFTServer (socketserver.StreamRequestHandler):
         self.sendout ("{NAME=%s}" % filename)
         self.sendout ("{BEGIN}")
         with open (f, 'rb') as fb:
-            while 1:
-                buff = fb.read (1024)
-                if not buff:
-                    break
+            left_to_send = filesize
+            while left_to_send != 0:
+                sent = min (1024, left_to_send)
+                buff = fb.read (sent)
                 self.wfile.write (buff)
+                left_to_send -= sent
         self.sendout ("{END}")
         
     def handle (self):
