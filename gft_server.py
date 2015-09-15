@@ -91,7 +91,7 @@ class GFTServer (socketserver.StreamRequestHandler):
 if __name__ == "__main__":
     # make the host '' if you want to bind it
     # to all interfaces
-    HOST, PORT = "localhost", 7777
+    HOST, PORT = "", 7777
 
     while PORT < 8000:
         try:

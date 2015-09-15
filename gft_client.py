@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import re
 import socket
 import sys
@@ -45,7 +46,7 @@ def read_instruct (sock):
     while 1:
         c = sock.recv (1)
         buff += c
-        if c == b'}':
+        if c == bytes ('}', "UTF-8"):
             break
     return buff
 
@@ -79,24 +80,25 @@ filesize = 0
 filename = ''
 while 1:
     raw_inst = read_instruct (sock)
-    #print (raw_inst)
+    print (raw_inst)
     sys.stdout.flush ()
     inst = parse_inst (raw_inst)
     print (inst)
     (inst, arg) = (inst[0].upper (), inst[1])
     if inst == 'SIZE':
         filesize = int (arg)
+        print ("Filesize: %d" % filesize)
     elif inst == 'NAME':
         filename = arg
+        print ("Filename: %s" % filename)
     elif inst == 'BEGIN':
-        to_get = filesize
+        to_get = filesize 
         buff = b''
         with open (filename, 'wb') as ff:
-            while 1:
+            while to_get != 0:
                 getting = min (to_get, 1024)
+                #print (getting)
                 buff = sock.recv (getting)
-                if to_get == 0:
-                    break
                 ff.write (buff)
                 to_get -= getting
     elif inst == 'END':
