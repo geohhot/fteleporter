@@ -50,14 +50,14 @@ def read_instruct (sock):
     return buff
 
 def parse_inst (inst):
-    inst = str (inst, "ASCII")
+    inst = str (inst, "UTF-8")
     pp = r'{([a-zA-Z0-9]+)(?:=(.*?))?}'
     inst_patt = re.compile (pp)
     return inst_patt.findall (inst)[0]
 
 if opts.list:
     # do the list thingy
-    sock.sendall (bytes ("{LIST}\n", "ASCII"))
+    sock.sendall (bytes ("{LIST}\n", "UTF-8"))
     while 1:
         raw_inst = read_instruct (sock)
         #print (raw_inst)
@@ -73,7 +73,7 @@ if opts.download == None:
     sys.exit (-1)
 
 sock.sendall (bytes ("{DOWNLOAD %d}\n" % opts.download,
-                     "ASCII"))
+                     "UTF-8"))
 
 filesize = 0
 filename = ''

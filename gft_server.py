@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import os
 import socketserver
 import re
@@ -7,7 +8,7 @@ gft = re.compile (r'^{([a-zA-Z0-9\s]*[a-zA-Z0-9])}[\n\r]+')
     
 class GFTServer (socketserver.StreamRequestHandler):
     def sendout (self, data):
-        self.wfile.write (bytes (data, "ASCII"))
+        self.wfile.write (bytes (data, "UTF-8"))
 
     def get_filelist (self):
         # prints out the file
@@ -66,8 +67,8 @@ class GFTServer (socketserver.StreamRequestHandler):
         
     def handle (self):
         self.data = self.rfile.readline ()
-        data = str (self.data, "ASCII")
-        #print ("Data: ", bytes (data, "ASCII"))
+        data = str (self.data, "UTF-8")
+        #print ("Data: ", bytes (data, "UTF-8"))
 
         try:
             commands = gft.search (data).group (1)
@@ -85,7 +86,7 @@ class GFTServer (socketserver.StreamRequestHandler):
             else:
                 self.error (4)
                 
-        #self.wfile.write (bytes (str (command) + '\n', "ASCII"))
+        #self.wfile.write (bytes (str (command) + '\n', "UTF-8"))
 
 if __name__ == "__main__":
     # make the host '' if you want to bind it
