@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import os
 import socketserver
+from hashlib import md5
 import re
 
 gft = re.compile (r'^{([a-zA-Z0-9\s]*[a-zA-Z0-9])}[\n\r]+')
@@ -54,8 +55,10 @@ class GFTServer (socketserver.StreamRequestHandler):
             return
         filesize = os.path.getsize (f)
         (filepath, filename) = os.path.split (f)
+        checksum = md5 (open (f, 'rb').read ()).hexdigest ()
         self.sendout ("{SIZE=%d}" % filesize)
         self.sendout ("{NAME=%s}" % filename)
+        self.sendout ("{HASH=%s}" % checksum)
         self.sendout ("{BEGIN}")
         total_sent = 0
         with open (f, 'rb') as fb:

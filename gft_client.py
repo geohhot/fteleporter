@@ -3,6 +3,7 @@ import re
 import socket
 import sys
 from optparse import OptionParser
+from hashlib import md5
 
 parser = OptionParser ()
 
@@ -80,17 +81,20 @@ filesize = 0
 filename = ''
 while 1:
     raw_inst = read_instruct (sock)
-    print (raw_inst)
+    #print (raw_inst)
     sys.stdout.flush ()
     inst = parse_inst (raw_inst)
     print (inst)
     (inst, arg) = (inst[0].upper (), inst[1])
+    checksum = ''
     if inst == 'SIZE':
         filesize = int (arg)
-        print ("Filesize: %d" % filesize)
+        #print ("Filesize: %d" % filesize)
     elif inst == 'NAME':
         filename = arg
-        print ("Filename: %s" % filename)
+        #print ("Filename: %s" % filename)
+    elif inst == 'HASH':
+        checksum = arg
     elif inst == 'BEGIN':
         to_get = filesize
         got = 0
@@ -106,6 +110,9 @@ while 1:
                 ff.write (buff)
                 to_get -= getting
         print (got)
+        calculated = md5 (open (filename,'rb').read ()).hexdigest ()
+        print ("Hash: ", checksum)
+        print ("Calc: ", calculated)
     elif inst == 'END':
         break
 
