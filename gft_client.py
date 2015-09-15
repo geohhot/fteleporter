@@ -92,15 +92,20 @@ while 1:
         filename = arg
         print ("Filename: %s" % filename)
     elif inst == 'BEGIN':
-        to_get = filesize 
+        to_get = filesize
+        got = 0
         buff = b''
+        sock.setblocking (True)
         with open (filename, 'wb') as ff:
-            while to_get != 0:
+            while got != filesize:
                 getting = min (to_get, 1024)
                 #print (getting)
-                buff = sock.recv (getting)
+                buff = sock.recv (getting,
+                                  socket.MSG_WAITALL)
+                got += len (buff)
                 ff.write (buff)
                 to_get -= getting
+        print (got)
     elif inst == 'END':
         break
 
