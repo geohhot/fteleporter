@@ -18,11 +18,14 @@ parser.add_option ('-s', '--host', dest = 'host',
 parser.add_option ('-p', '--port', dest = 'port',
                    type = 'int',
                    help = 'Port to connect to')
+parser.add_option ('-a', '--all', dest = 'all',
+                   default = False, action = "store_true",
+                   help = 'Download all files')
 
 (opts, args) = parser.parse_args ()
 
 if opts.host == None:
-    print ("No host!")
+    print ("No host specified!")
     sys.exit (-1)
 
 spl = opts.host.split (':') 
@@ -57,64 +60,98 @@ def parse_inst (inst):
     inst_patt = re.compile (pp)
     return inst_patt.findall (inst)[0]
 
-if opts.list:
-    # do the list thingy
+def download (n):    
+    sock.sendall (bytes ("{DOWNLOAD %d}\n" % n,
+                         "UTF-8"))
+
+    filesize = 0
+    filename = ''
+    while 1:
+        raw_inst = read_instruct (sock)
+        #print (raw_inst)
+        sys.stdout.flush ()
+        inst = parse_inst (raw_inst)
+        print (inst)
+        (inst, arg) = (inst[0].upper (), inst[1])
+        if inst == 'SIZE':
+            filesize = int (arg)
+            #print ("Filesize: %d" % filesize)
+        elif inst == 'NAME':
+            filename = arg
+            #print ("Filename: %s" % filename)
+        elif inst == 'HASH':
+            checksum = arg
+        elif inst == 'BEGIN':
+            to_get = filesize
+            got = 0
+            buff = b''
+            sock.setblocking (True)
+            with open (filename, 'wb') as ff:
+                while got != filesize:
+                    getting = min (to_get, 1024)
+                    #print (getting)
+                    buff = sock.recv (getting,
+                                      socket.MSG_WAITALL)
+                    got += len (buff)
+                    ff.write (buff)
+                    ff.flush ()
+                    to_get -= getting
+            #print (got)
+            calculated = md5 (open (filename,'rb').read ()).hexdigest ()
+            print ("Hash:", checksum)
+            print ("Calc:", calculated)
+            if checksum != calculated:
+                print ("Checksum MISMATCH!!")
+            else:
+                print ("Match!")
+        elif inst == 'END':
+            break
+
+def list_all ():
     sock.sendall (bytes ("{LIST}\n", "UTF-8"))
+    filelist = []
     while 1:
         raw_inst = read_instruct (sock)
         #print (raw_inst)
         inst = parse_inst (raw_inst)
+        filelist.append (inst)
         print (inst)
         if inst[0] == 'END':
             break
     sock.close()
+    return filelist
+        
+if opts.list:
+    # do the list thingy
+    list_all ()
+    sock.close ()
     sys.exit (0)
-
-if opts.download == None:
+    
+if opts.download == None and (not opts.all):
     print ("No download specified!")
     sys.exit (-1)
 
-sock.sendall (bytes ("{DOWNLOAD %d}\n" % opts.download,
-                     "UTF-8"))
-
-filesize = 0
-filename = ''
-while 1:
-    raw_inst = read_instruct (sock)
-    #print (raw_inst)
-    sys.stdout.flush ()
-    inst = parse_inst (raw_inst)
-    print (inst)
-    (inst, arg) = (inst[0].upper (), inst[1])
-    if inst == 'SIZE':
-        filesize = int (arg)
-        #print ("Filesize: %d" % filesize)
-    elif inst == 'NAME':
-        filename = arg
-        #print ("Filename: %s" % filename)
-    elif inst == 'HASH':
-        checksum = arg
-    elif inst == 'BEGIN':
-        to_get = filesize
-        got = 0
-        buff = b''
-        sock.setblocking (True)
-        with open (filename, 'wb') as ff:
-            while got != filesize:
-                getting = min (to_get, 1024)
-                #print (getting)
-                buff = sock.recv (getting,
-                                  socket.MSG_WAITALL)
-                got += len (buff)
-                ff.write (buff)
-                to_get -= getting
-        #print (got)
-        calculated = md5 (open (filename,'rb').read ()).hexdigest ()
-        print ("Hash:", checksum)
-        print ("Calc:", calculated)
-        if checksum != calculated:
-            print ("Checksum MISMATCH!!")
+if opts.all:
+    # download all files
+    filelist = list_all ()
+    fsize = 0
+    fi = 0
+    for f in filelist:
+        if f[0] == 'LIST':
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.connect ((HOST, PORT))
+            fsize = int (f[1])
+        elif f[0] == 'END':
+            sock.close ()
+            break
         else:
-            print ("Match!")
-    elif inst == 'END':
-        break
+            if fi < fsize:
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    sock.connect ((HOST, PORT))
+            fi += 1
+            ind = f[0]
+            print ("Downloading [%s]" % f[1])
+            download (int (f[0]))
+    
+else:
+    download (opts.download)
