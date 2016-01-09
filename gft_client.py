@@ -5,6 +5,23 @@ import sys
 from optparse import OptionParser
 from hashlib import md5
 
+def human_size (v):
+    kb = v  / 1024
+    mb = kb / 1024
+    gb = mb / 1024
+    res = ""
+    if kb < 1024:
+        return ("%.2f KB" % kb)
+    if mb < 1024:
+        return ("%.2f MB" % mb)
+    return ("%.2f GB" % gb)
+
+def red (txt):
+    return "\033[31;4;1m" + txt + "\033[m"
+
+def green (txt):
+    return "\033[32;1m" + txt + "\033[m"
+
 parser = OptionParser ()
 
 parser.add_option ('-l', '--list', dest = 'list',
@@ -60,7 +77,7 @@ def parse_inst (inst):
     inst_patt = re.compile (pp)
     return inst_patt.findall (inst)[0]
 
-def download (n):    
+def download (n, maxl=20):    
     sock.sendall (bytes ("{DOWNLOAD %d}\n" % n,
                          "UTF-8"))
 
@@ -71,7 +88,7 @@ def download (n):
         #print (raw_inst)
         sys.stdout.flush ()
         inst = parse_inst (raw_inst)
-        print (inst)
+        #print (inst)
         (inst, arg) = (inst[0].upper (), inst[1])
         if inst == 'SIZE':
             filesize = int (arg)
@@ -82,6 +99,8 @@ def download (n):
         elif inst == 'HASH':
             checksum = arg
         elif inst == 'BEGIN':
+            print (("Getting: name=[" + ("%%%ds" % maxl) + "] [%8s]") %
+                   (filename, human_size (filesize)), end = ' ')
             to_get = filesize
             got = 0
             buff = b''
@@ -98,12 +117,12 @@ def download (n):
                     to_get -= getting
             #print (got)
             calculated = md5 (open (filename,'rb').read ()).hexdigest ()
-            print ("Hash:", checksum)
-            print ("Calc:", calculated)
+            #print ("Hash:", checksum)
+            #print ("Calc:", calculated)
             if checksum != calculated:
-                print ("Checksum MISMATCH!!")
+                print (red ("MISMATCH!!"))
             else:
-                print ("Match!")
+                print (green ("Match!"))
         elif inst == 'END':
             break
 
@@ -136,6 +155,18 @@ if opts.all:
     filelist = list_all ()
     fsize = 0
     fi = 0
+    maxl = 0
+    for f in filelist:
+        if f[0] == 'LIST':
+            fsize = int (f[1])
+        elif f[0] == 'END':
+            break
+        else:
+            if len (f[1]) > maxl:
+                maxl = len (f[1])
+    #print (maxl)
+
+                
     for f in filelist:
         if f[0] == 'LIST':
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -150,8 +181,8 @@ if opts.all:
                     sock.connect ((HOST, PORT))
             fi += 1
             ind = f[0]
-            print ("Downloading [%s]" % f[1])
-            download (int (f[0]))
+            # print ("Downloading [%s]" % f[1])
+            download (int (f[0]), maxl=maxl)
     
 else:
     download (opts.download)
