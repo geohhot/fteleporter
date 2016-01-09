@@ -99,8 +99,10 @@ def download (n, maxl=20):
         elif inst == 'HASH':
             checksum = arg
         elif inst == 'BEGIN':
-            print (("Getting: name=[" + ("%%%ds" % maxl) + "] [%8s]") %
-                   (filename, human_size (filesize)), end = ' ')
+            base_str = ("Getting: name=[" + ("%%%ds" % maxl) + "] [%8s] ") % \
+                       (filename, human_size (filesize))
+            print (base_str, end = '\r')
+            sys.stdout.flush ()
             to_get = filesize
             got = 0
             buff = b''
@@ -115,6 +117,14 @@ def download (n, maxl=20):
                     ff.write (buff)
                     ff.flush ()
                     to_get -= getting
+                    percentage = (got / filesize) * 100
+                    print (base_str + ("%3.2f %%" % percentage), end = '\r')
+                    sys.stdout.flush ()
+                print (base_str + "100 %", end = ' ')
+                sys.stdout.flush ()
+
+            sys.stdout.flush ()
+
             #print (got)
             calculated = md5 (open (filename,'rb').read ()).hexdigest ()
             #print ("Hash:", checksum)
